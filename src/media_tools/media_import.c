@@ -8668,36 +8668,32 @@ void on_m2ts_import_data(GF_M2TS_Demuxer *ts, u32 evt_type, void *par)
 			pck->stream->program->first_dts = pck->stream->first_dts;
 			GF_LOG(GF_LOG_WARNING, GF_LOG_CONTAINER, ("[MPEG-2 TS Import] negative time sample - PCR loop/discontinuity, adjusting\n"));
 		}
-		if (samp->DTS >= pck->stream->first_dts) {
-			samp->DTS -= pck->stream->first_dts;
-			samp->IsRAP = (pck->flags & GF_M2TS_PES_PCK_RAP) ? RAP : RAP_NO;
-			samp->data = pck->data;
-			samp->dataLength = pck->data_len;
+        samp->DTS -= pck->stream->first_dts;
+        samp->IsRAP = (pck->flags & GF_M2TS_PES_PCK_RAP) ? RAP : RAP_NO;
+        samp->data = pck->data;
+        samp->dataLength = pck->data_len;
 
-			if ((pck->stream->flags & GF_M2TS_ES_FIRST_DTS) && (samp->DTS + 1 == tsimp->last_dts)) {
-				e = gf_isom_append_sample_data(import->dest, tsimp->track, (char*)pck->data, pck->data_len);
-			} else {
+        if ((pck->stream->flags & GF_M2TS_ES_FIRST_DTS) && (samp->DTS + 1 == tsimp->last_dts)) {
+            e = gf_isom_append_sample_data(import->dest, tsimp->track, (char*)pck->data, pck->data_len);
+        } else {
 
-				if (tsimp->avccfg || tsimp->hevccfg) m2ts_rewrite_nalu_sample(import, tsimp);
+            if (tsimp->avccfg || tsimp->hevccfg) m2ts_rewrite_nalu_sample(import, tsimp);
 
-				e = gf_isom_add_sample(import->dest, tsimp->track, 1, samp);
-			}
-			if (e) {
-				GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS Import] PID %d: Error adding sample: %s\n", pck->stream->pid, gf_error_to_string(e)));
-				//import->flags |= GF_IMPORT_DO_ABORT;
-				import->last_error = e;
-			}
-			if (import->duration && (import->duration<=(samp->DTS+samp->CTS_Offset)/90)) {
-				//import->flags |= GF_IMPORT_DO_ABORT;
-			}
+            e = gf_isom_add_sample(import->dest, tsimp->track, 1, samp);
+        }
+        if (e) {
+            GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS Import] PID %d: Error adding sample: %s\n", pck->stream->pid, gf_error_to_string(e)));
+            //import->flags |= GF_IMPORT_DO_ABORT;
+            import->last_error = e;
+        }
+        if (import->duration && (import->duration<=(samp->DTS+samp->CTS_Offset)/90)) {
+            //import->flags |= GF_IMPORT_DO_ABORT;
+        }
 
-			if (pck->flags & GF_M2TS_PES_PCK_I_FRAME) tsimp->nb_i++;
-			if (pck->flags & GF_M2TS_PES_PCK_P_FRAME) tsimp->nb_p++;
-			if (pck->flags & GF_M2TS_PES_PCK_B_FRAME) tsimp->nb_b++;
-			tsimp->last_dts = samp->DTS + 1;
-		} else {
-			GF_LOG(GF_LOG_ERROR, GF_LOG_CONTAINER, ("[MPEG-2 TS Import] negative time sample - skipping\n"));
-		}
+        if (pck->flags & GF_M2TS_PES_PCK_I_FRAME) tsimp->nb_i++;
+        if (pck->flags & GF_M2TS_PES_PCK_P_FRAME) tsimp->nb_p++;
+        if (pck->flags & GF_M2TS_PES_PCK_B_FRAME) tsimp->nb_b++;
+        tsimp->last_dts = samp->DTS + 1;
 		samp->data = NULL;
 		gf_isom_sample_del(&samp);
 	}
